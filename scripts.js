@@ -41,7 +41,6 @@ const xpSystem = {
         this.level++;
         this.currentXP = 0;
         this.xpToNextLevel = Math.floor(this.xpToNextLevel * 1.5);
-        playerState.speed += 0.5; // Increase speed slightly with each level
         
         // Update level display
         levelDisplay.textContent = this.level;
@@ -101,6 +100,81 @@ const xpSystem = {
         const xpPercentage = (this.currentXP / this.xpToNextLevel) * 100;
         xpBar.style.width = `${xpPercentage}%`;
         xpText.textContent = `Level ${this.level} - ${this.currentXP}/${this.xpToNextLevel} XP`;
+    }
+};
+
+// Square system
+class Square {
+    constructor() {
+        this.element = document.createElement('div');
+        this.element.className = 'resource-square';
+        this.size = 30;
+        
+        // Random position within game container
+        const containerRect = gameContainer.getBoundingClientRect();
+        this.x = Math.random() * (containerRect.width - this.size);
+        this.y = Math.random() * (containerRect.height - this.size);
+        
+        // Apply styles
+        this.element.style.width = `${this.size}px`;
+        this.element.style.height = `${this.size}px`;
+        this.element.style.transform = `translate(${this.x}px, ${this.y}px)`;
+        
+        gameContainer.appendChild(this.element);
+    }
+
+    destroy() {
+        // Create destruction particles
+        for (let i = 0; i < 8; i++) {
+            xpSystem.createParticle(this.x + this.size/2, this.y + this.size/2);
+        }
+        this.element.remove();
+    }
+}
+
+// Square management
+const squareSystem = {
+    squares: [],
+    maxSquares: 10,
+    spawnInterval: 2000,
+    lastSpawnTime: 0,
+
+    update() {
+        // Spawn new squares
+        const currentTime = Date.now();
+        if (currentTime - this.lastSpawnTime > this.spawnInterval && this.squares.length < this.maxSquares) {
+            this.squares.push(new Square());
+            this.lastSpawnTime = currentTime;
+        }
+
+        // Check collisions with player
+        const playerRect = {
+            x: playerState.x,
+            y: playerState.y,
+            width: 40,
+            height: 40
+        };
+
+        this.squares = this.squares.filter(square => {
+            if (this.checkCollision(playerRect, {
+                x: square.x,
+                y: square.y,
+                width: square.size,
+                height: square.size
+            })) {
+                square.destroy();
+                xpSystem.gainXP(25); // Grant XP when square is destroyed
+                return false;
+            }
+            return true;
+        });
+    },
+
+    checkCollision(rect1, rect2) {
+        return rect1.x < rect2.x + rect2.width &&
+               rect1.x + rect1.width > rect2.x &&
+               rect1.y < rect2.y + rect2.height &&
+               rect1.y + rect1.height > rect2.y;
     }
 };
 
@@ -180,6 +254,9 @@ function updateGame() {
     if (playerState.moving && Date.now() - xpSystem.lastXPGain >= 1000) {
         xpSystem.gainXP(50);
     }
+
+    // Update square system
+    squareSystem.update();
 
     // Continue the game loop
     requestAnimationFrame(updateGame);
