@@ -196,12 +196,120 @@
             background: #00ff88;
             color: #000;
         }
+        .upgrades-panel {
+            position: absolute;
+            left: 120px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #00ff88;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 136, 0.2),
+                inset 0 0 10px rgba(0, 255, 136, 0.1);
+            color: #fff;
+            width: 260px;
+            backdrop-filter: blur(5px);
+        }
+
+        .upgrade-points {
+            text-align: center;
+            color: #00ff88;
+            font-size: 22px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+            font-weight: bold;
+            padding: 10px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .upgrade-button {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #00ff88;
+            color: #fff;
+            padding: 12px 15px 12px 40px;
+            margin: 10px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            font-size: 16px;
+            letter-spacing: 0.5px;
+        }
+
+        .upgrade-button:hover:not(:disabled) {
+            background: rgba(0, 255, 136, 0.15);
+            transform: translateX(5px);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
+        }
+
+        .upgrade-button:active:not(:disabled) {
+            transform: translateX(5px) scale(0.98);
+        }
+
+        .upgrade-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .upgrade-button .level {
+            color: #00ff88;
+            font-size: 15px;
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .upgrade-hotkey {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #00ff88;
+            font-size: 13px;
+            opacity: 0.9;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
     </style>
 </head>
 <body>
     <div class="game-title">WASD to move</div>
     <div class="dev-tools">
         <button class="dev-button" id="dev-level-up">Dev: Level Up</button>
+    </div>
+    <div class="upgrades-panel">
+        <div class="upgrade-points">Upgrade Points: <span id="points-display">0</span></div>
+        <button class="upgrade-button" id="size-upgrade">
+            <span class="upgrade-hotkey">1</span>
+            Player Size
+            <span class="level">0/7</span>
+        </button>
+        <button class="upgrade-button" id="xpMultiplier-upgrade">
+            <span class="upgrade-hotkey">2</span>
+            XP Multiplier
+            <span class="level">0/7</span>
+        </button>
+        <button class="upgrade-button" id="spawnRate-upgrade">
+            <span class="upgrade-hotkey">3</span>
+            Spawn Rate
+            <span class="level">0/7</span>
+        </button>
     </div>
     <div id="game-container">
         <div id="player"></div>
