@@ -21,7 +21,9 @@ const xpSystem = {
     lastXPGain: 0,
 
     gainXP(amount) {
-        this.currentXP += amount;
+        // Apply XP multiplier
+        const multipliedXP = Math.floor(amount * upgradeSystem.upgrades.xpMultiplier.effect);
+        this.currentXP += multipliedXP;
         this.lastXPGain = Date.now();
         
         // Check for level up
@@ -41,6 +43,9 @@ const xpSystem = {
         this.level++;
         this.currentXP = 0;
         this.xpToNextLevel = Math.floor(this.xpToNextLevel * 1.5);
+        
+        // Add upgrade points
+        upgradeSystem.addPoints(3);
         
         // Update level display
         levelDisplay.textContent = this.level;
@@ -103,6 +108,59 @@ const xpSystem = {
     }
 };
 
+// Upgrade system
+const upgradeSystem = {
+    points: 0,
+    upgrades: {
+        size: { level: 0, maxLevel: 7, effect: 1.0 },
+        xpMultiplier: { level: 0, maxLevel: 7, effect: 1.0 },
+        spawnRate: { level: 0, maxLevel: 7, effect: 1.0 }
+    },
+    
+    addPoints(amount) {
+        this.points += amount;
+        this.updateDisplay();
+    },
+    
+    updateDisplay() {
+        document.getElementById('points-display').textContent = this.points;
+        
+        // Update upgrade buttons
+        for (const [key, upgrade] of Object.entries(this.upgrades)) {
+            const button = document.getElementById(`${key}-upgrade`);
+            if (button) {
+                const levelSpan = button.querySelector('.level');
+                levelSpan.textContent = `${upgrade.level}/${upgrade.maxLevel}`;
+                button.disabled = this.points === 0 || upgrade.level >= upgrade.maxLevel;
+            }
+        }
+    },
+    
+    upgrade(type) {
+        const upgrade = this.upgrades[type];
+        if (this.points > 0 && upgrade.level < upgrade.maxLevel) {
+            this.points--;
+            upgrade.level++;
+            
+            // Update effect based on type
+            switch(type) {
+                case 'size':
+                    upgrade.effect = 1 + (upgrade.level * 0.1); // 10% increase per level
+                    playerState.updateSize();
+                    break;
+                case 'xpMultiplier':
+                    upgrade.effect = 1 + (upgrade.level * 0.15); // 15% increase per level
+                    break;
+                case 'spawnRate':
+                    upgrade.effect = 1 + (upgrade.level * 0.12); // 12% increase per level
+                    break;
+            }
+            
+            this.updateDisplay();
+        }
+    }
+};
+
 // Square system
 class Square {
     constructor() {
@@ -133,16 +191,23 @@ class Square {
 }
 
 // Square management
-const squareSystem = {
-    squares: [],
-    maxSquares: 10,
-    spawnInterval: 2000,
-    lastSpawnTime: 0,
-
+class SquareManager {
+    constructor() {
+        this.squares = [];
+        this.baseSpawnInterval = 2000; // Base spawn interval in milliseconds
+        this.lastSpawnTime = Date.now();
+        this.maxSquares = 15;
+    }
+    
+    getSpawnInterval() {
+        // Faster spawn rate = smaller interval
+        return this.baseSpawnInterval / upgradeSystem.upgrades.spawnRate.effect;
+    }
+    
     update() {
-        // Spawn new squares
+        // Spawn new squares with upgraded spawn rate
         const currentTime = Date.now();
-        if (currentTime - this.lastSpawnTime > this.spawnInterval && this.squares.length < this.maxSquares) {
+        if (currentTime - this.lastSpawnTime > this.getSpawnInterval() && this.squares.length < this.maxSquares) {
             this.squares.push(new Square());
             this.lastSpawnTime = currentTime;
         }
@@ -151,8 +216,8 @@ const squareSystem = {
         const playerRect = {
             x: playerState.x,
             y: playerState.y,
-            width: 40,
-            height: 40
+            width: playerState.baseSize * upgradeSystem.upgrades.size.effect,
+            height: playerState.baseSize * upgradeSystem.upgrades.size.effect
         };
 
         this.squares = this.squares.filter(square => {
@@ -163,12 +228,12 @@ const squareSystem = {
                 height: square.size
             })) {
                 square.destroy();
-                xpSystem.gainXP(25); // Grant XP when square is destroyed
+                xpSystem.gainXP(25); // Base XP amount, will be multiplied in gainXP
                 return false;
             }
             return true;
         });
-    },
+    }
 
     checkCollision(rect1, rect2) {
         return rect1.x < rect2.x + rect2.width &&
@@ -176,16 +241,25 @@ const squareSystem = {
                rect1.y < rect2.y + rect2.height &&
                rect1.y + rect1.height > rect2.y;
     }
-};
+}
+
+const squareSystem = new SquareManager();
 
 // Player state
 const playerState = {
-    x: 0,  // Start at top-left corner
-    y: 0,  // Start at top-left corner
+    x: 0,
+    y: 0,
     speed: 2,
     velocityX: 0,
     velocityY: 0,
-    moving: false
+    moving: false,
+    baseSize: 40,
+    
+    updateSize() {
+        const newSize = this.baseSize * upgradeSystem.upgrades.size.effect;
+        player.style.width = `${newSize}px`;
+        player.style.height = `${newSize}px`;
+    }
 };
 
 // Key state tracking
@@ -205,6 +279,11 @@ document.addEventListener('keydown', (e) => {
         player.classList.add('moving');
         e.preventDefault(); // Prevent scrolling with arrow keys
     }
+    
+    // Upgrade hotkeys
+    if (e.key === '1') upgradeSystem.upgrade('size');
+    if (e.key === '2') upgradeSystem.upgrade('xpMultiplier');
+    if (e.key === '3') upgradeSystem.upgrade('spawnRate');
 });
 
 document.addEventListener('keyup', (e) => {
@@ -218,6 +297,11 @@ document.addEventListener('keyup', (e) => {
         }
     }
 });
+
+// Add event listeners for upgrade buttons
+document.getElementById('size-upgrade').addEventListener('click', () => upgradeSystem.upgrade('size'));
+document.getElementById('xpMultiplier-upgrade').addEventListener('click', () => upgradeSystem.upgrade('xpMultiplier'));
+document.getElementById('spawnRate-upgrade').addEventListener('click', () => upgradeSystem.upgrade('spawnRate'));
 
 // Game loop
 function updateGame() {
