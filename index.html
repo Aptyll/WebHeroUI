@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WASD Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            overflow: hidden;
+            background: #121212;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        #game-container {
+            width: 800px;
+            height: 533px;
+            position: relative;
+            background-image: 
+                linear-gradient(45deg, #2a2a2a 25%, transparent 25%),
+                linear-gradient(-45deg, #2a2a2a 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #2a2a2a 75%),
+                linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
+            background-size: 100px 100px;
+            background-position: 0 0, 0 50px, 50px -50px, -50px 0px;
+            background-color: #1a1a1a;
+            border-radius: 10px;
+            border: 2px solid #333;
+            box-shadow: 0 0 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        #player {
+            width: 40px;
+            height: 40px;
+            background-color: #00ff88;
+            position: absolute;
+            left: 0;
+            top: 0;
+            border-radius: 6px;
+            transition: box-shadow 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+            will-change: transform;
+        }
+        #player::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: inherit;
+            pointer-events: none;
+        }
+        #player.moving {
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+        }
+        #player.level-up::after {
+            animation: levelUpFlash 1s ease-out;
+        }
+        @keyframes levelUpFlash {
+            0% { transform: scale(1); box-shadow: 0 0 30px rgba(0, 255, 136, 0.5); }
+            50% { transform: scale(1.3); box-shadow: 0 0 50px rgba(0, 255, 136, 0.8); }
+            100% { transform: scale(1); box-shadow: 0 0 30px rgba(0, 255, 136, 0.5); }
+        }
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            background: #00ff88;
+            border-radius: 50%;
+            width: 8px;
+            height: 8px;
+            animation: particleAnimation 0.8s ease-out forwards;
+        }
+        @keyframes particleAnimation {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(0);
+                opacity: 0;
+            }
+        }
+        .level-up-text {
+            position: absolute;
+            color: #00ff88;
+            font-size: 24px;
+            font-weight: bold;
+            pointer-events: none;
+            animation: levelUpText 1.5s ease-out forwards;
+            z-index: 1000;
+        }
+        @keyframes levelUpText {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+        }
+        .level-display {
+            position: absolute;
+            color: #00ff88;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 50%;
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            pointer-events: none;
+            border: 1px solid #00ff88;
+            box-shadow: 
+                0 0 8px rgba(0, 255, 136, 0.3),
+                inset 0 0 4px rgba(0, 255, 136, 0.3);
+            text-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
+            transform-origin: center;
+            animation: floatEffect 2s ease-in-out infinite;
+        }
+
+        @keyframes floatEffect {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-2px); }
+            100% { transform: translateY(0); }
+        }
+        .game-title {
+            position: absolute;
+            top: 20px;
+            color: #666;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        #xp-container {
+            position: relative;
+            width: 800px;
+            height: 20px;
+            background-color: #1a1a1a;
+            margin-top: 10px;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 2px solid #333;
+        }
+        #xp-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00ff88, #00ffcc);
+            transition: width 0.3s ease;
+        }
+        #xp-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 12px;
+            line-height: 20px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            z-index: 1001;
+        }
+        .dev-tools {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        .dev-button {
+            background: #444;
+            color: #00ff88;
+            border: 1px solid #00ff88;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+        .dev-button:hover {
+            background: #00ff88;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-title">WASD to move</div>
+    <div class="dev-tools">
+        <button class="dev-button" id="dev-level-up">Dev: Level Up</button>
+    </div>
+    <div id="game-container">
+        <div id="player"></div>
+    </div>
+    <div id="xp-container">
+        <div id="xp-bar"></div>
+        <div id="xp-text">Level 1 - 0/100 XP</div>
+    </div>
+    <script src="scripts.js"></script>
+</body>
+</html>
